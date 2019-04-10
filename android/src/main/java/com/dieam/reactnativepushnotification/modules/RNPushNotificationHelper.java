@@ -36,7 +36,7 @@ import static com.dieam.reactnativepushnotification.modules.RNPushNotificationAt
 public class RNPushNotificationHelper {
     public static final String PREFERENCES_KEY = "rn_push_notification";
     private static final long DEFAULT_VIBRATION = 300L;
-    private static final String NOTIFICATION_CHANNEL_ID = "rn-push-notification-channel-id";
+    private static final String NOTIFICATION_CHANNEL_ID = "rn-push-notification-channel-id-";
 
     private Context context;
     private RNPushNotificationConfig config;
@@ -153,6 +153,12 @@ public class RNPushNotificationHelper {
                 return;
             }
 
+            String notificationChannelId = NOTIFICATION_CHANNEL_ID;
+            String soundName = bundle.getString("soundName");
+            if (soundName != null) {
+                notificationChannelId = NOTIFICATION_CHANNEL_ID + soundName;
+            }
+
             Resources res = context.getResources();
             String packageName = context.getPackageName();
 
@@ -206,7 +212,7 @@ public class RNPushNotificationHelper {
                 }
             }
 
-            NotificationCompat.Builder notification = new NotificationCompat.Builder(context, NOTIFICATION_CHANNEL_ID)
+            NotificationCompat.Builder notification = new NotificationCompat.Builder(context, notificationChannelId)
                     .setContentTitle(title)
                     .setTicker(bundle.getString("ticker"))
                     .setVisibility(visibility)
@@ -286,7 +292,6 @@ public class RNPushNotificationHelper {
             Uri soundUri = null;
             if (!bundle.containsKey("playSound") || bundle.getBoolean("playSound")) {
                 soundUri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION);
-                String soundName = bundle.getString("soundName");
                 if (soundName != null) {
                     if (!"default".equalsIgnoreCase(soundName)) {
 
@@ -305,7 +310,7 @@ public class RNPushNotificationHelper {
                         soundUri = Uri.parse("android.resource://" + context.getPackageName() + "/" + resId);
 
                         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) { // API 26 and higher
-                            notification.setChannelId(NOTIFICATION_CHANNEL_ID);
+                            notification.setChannelId(notificationChannelId);
                         }
                         
                     }
@@ -338,7 +343,7 @@ public class RNPushNotificationHelper {
                     PendingIntent.FLAG_UPDATE_CURRENT);
 
             NotificationManager notificationManager = notificationManager();
-            checkOrCreateChannel(notificationManager, soundUri);
+            checkOrCreateChannel(notificationManager, soundUri, notificationChannelId);
 
             notification.setContentIntent(pendingIntent);
 
@@ -542,7 +547,7 @@ public class RNPushNotificationHelper {
         }
     }
 
-    private void checkOrCreateChannel(NotificationManager manager, Uri soundUri) {
+    private void checkOrCreateChannel(NotificationManager manager, Uri soundUri, String notificationChannelId) {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O)
             return;
         if (manager == null)
@@ -581,9 +586,9 @@ public class RNPushNotificationHelper {
             }
         }
 
-        NotificationChannel channel = manager.getNotificationChannel(NOTIFICATION_CHANNEL_ID);
+        NotificationChannel channel = manager.getNotificationChannel(notificationChannelId);
         if ( channel == null ) {
-            channel = new NotificationChannel(NOTIFICATION_CHANNEL_ID, this.config.getChannelName(), importance);
+            channel = new NotificationChannel(notificationChannelId, this.config.getChannelName(), importance);
             channel.setDescription(this.config.getChannelDescription());
             channel.enableLights(true);
             channel.enableVibration(true);
